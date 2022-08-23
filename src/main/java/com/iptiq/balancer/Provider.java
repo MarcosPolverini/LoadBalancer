@@ -1,4 +1,4 @@
-package com.iptiq;
+package com.iptiq.balancer;
 
 import java.util.UUID;
 
