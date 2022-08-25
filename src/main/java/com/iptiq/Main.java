@@ -11,10 +11,10 @@ public class Main {
 
     public static void main(String[] args) {
         //Simulating access
-        var providers = IntStream.range(0, 5).mapToObj(idx -> UUID.randomUUID().toString()).toArray(String[]::new);
-        try (var loadBalancer = new RandomLoadBalancerImpl(1)) {
+        var providers = IntStream.range(0, 10).mapToObj(idx -> UUID.randomUUID().toString()).toArray(String[]::new);
+        try (var loadBalancer = new RandomLoadBalancerImpl(3)) {
             loadBalancer.register(providers);
-            var numberOfInteractions = 10;
+            var numberOfInteractions = 100;
             var executor = Executors.newFixedThreadPool(numberOfInteractions);
             for (int i = 0; i < numberOfInteractions; i++) {
                 executor.execute(() -> {
@@ -23,7 +23,7 @@ public class Main {
                         Thread.sleep(waitTime);
                     } catch (InterruptedException e) {
                     }
-                    System.out.println(loadBalancer.get());
+                    loadBalancer.get();
                 });
             }
             executor.shutdown();

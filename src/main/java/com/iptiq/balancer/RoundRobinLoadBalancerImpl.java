@@ -2,10 +2,13 @@ package com.iptiq.balancer;
 
 import com.iptiq.balancer.register.provider.Provider;
 
+import java.util.logging.Logger;
+
 public class RoundRobinLoadBalancerImpl extends AbstractLoadBalancer {
 
     private int lastIndex;
     private final Object lock = new Object();
+    private static final Logger LOG = Logger.getLogger(RoundRobinLoadBalancerImpl.class.getName());
 
     public RoundRobinLoadBalancerImpl(int maxRequestPerProvider) {
         super(maxRequestPerProvider);
@@ -13,14 +16,15 @@ public class RoundRobinLoadBalancerImpl extends AbstractLoadBalancer {
 
     @Override
     public String get() {
-        var available = getAvailableProviders();
+        var providers = getProviders();
+        checkClusterCapacity(providers);
         Provider provider;
         synchronized (lock) {
-            if (lastIndex > available.size() - 1) {
-                lastIndex = 0;
-            }
-            provider = available.get(lastIndex);
-            lastIndex = lastIndex + 1 % available.size();
+            do {
+                provider = providers.get(lastIndex);
+                lastIndex = (lastIndex + 1) % providers.size();
+            } while (!provider.isAvailable());
+            LOG.info("Selected provider %s ".formatted(provider.getId()));
         }
         return provider.get();
     }

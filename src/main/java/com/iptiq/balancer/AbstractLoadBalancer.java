@@ -3,7 +3,6 @@ package com.iptiq.balancer;
 import com.iptiq.balancer.register.ProviderRegister;
 import com.iptiq.balancer.register.provider.Provider;
 import com.iptiq.infra.ClusterCapacityExceededException;
-import com.iptiq.infra.NoProviderAvailableException;
 
 import java.util.List;
 
@@ -32,17 +31,15 @@ abstract class AbstractLoadBalancer implements LoadBalancer {
         providerRegister.include(providerId);
     }
 
-    protected List<Provider> getAvailableProviders() {
-        var available = providerRegister.getProviders().stream().filter(Provider::isAvailable).toList();
-        if (available.isEmpty()) {
-            throw new NoProviderAvailableException();
-        }
-        checkClusterCapacity(available);
-        return available;
+    protected List<Provider> getProviders() {
+        return providerRegister.getProviders();
     }
 
-    private void checkClusterCapacity(final List<Provider> available) {
-        var totalCapacity = available.stream().mapToLong(Provider::getAvailableCapacity).sum();
+    protected void checkClusterCapacity(final List<Provider> providers) {
+        var totalCapacity = providers.stream()
+                .filter(Provider::isAvailable)
+                .mapToLong(Provider::getAvailableCapacity)
+                .sum();
         if (totalCapacity - 1 < 0) {
             throw new ClusterCapacityExceededException();
         }

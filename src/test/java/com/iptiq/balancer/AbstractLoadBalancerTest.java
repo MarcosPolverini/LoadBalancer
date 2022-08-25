@@ -1,11 +1,11 @@
 package com.iptiq.balancer;
 
 import com.iptiq.infra.ClusterCapacityExceededException;
-import com.iptiq.infra.NoProviderAvailableException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,10 +16,7 @@ abstract class AbstractLoadBalancerTest {
     @DisplayName("Should throw an exception when no providers are available")
     void testingNoAvailableProvider() {
         testBalancer(1, loadBalancer -> {
-            var provider = UUID.randomUUID().toString();
-            loadBalancer.register(provider);
-            loadBalancer.exclude(provider);
-            assertThrows(NoProviderAvailableException.class, loadBalancer::get);
+            assertThrows(ClusterCapacityExceededException.class, loadBalancer::get);
         });
     }
 
@@ -29,7 +26,10 @@ abstract class AbstractLoadBalancerTest {
         testBalancer(0, loadBalancer -> {
             var provider = UUID.randomUUID().toString();
             loadBalancer.register(provider);
+            var executor = Executors.newSingleThreadExecutor();
+            executor.execute(loadBalancer::get);
             assertThrows(ClusterCapacityExceededException.class, loadBalancer::get);
+            executor.shutdown();
         });
     }
 

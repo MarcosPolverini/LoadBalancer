@@ -1,36 +1,38 @@
 package com.iptiq.balancer.register.provider;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class Provider {
 
     private final String id;
     private boolean alive;
     private boolean excluded;
     private int heartBeatCounter;
-    private int maxRequests;
+    private AtomicInteger maxRequests;
     private final Endpoint endpoint;
 
     public Provider(final String id, final int maxRequests) {
         this.id = id;
         this.alive = true;
-        this.maxRequests = maxRequests;
+        this.maxRequests = new AtomicInteger(maxRequests);
         this.endpoint = new EndpointSimulator();
     }
 
     public Provider(final String id, final int maxRequests, final Endpoint endpoint) {
         this.id = id;
         this.alive = true;
-        this.maxRequests = maxRequests;
+        this.maxRequests = new AtomicInteger(maxRequests);
         this.endpoint = endpoint;
     }
 
     public String get() {
         //Simulate network connection
-        if (maxRequests == 0) {
+        if (maxRequests.get() == 0) {
             throw new IllegalStateException("Provider %s cannot handle more requests".formatted(id));
         }
-        maxRequests--;
+        maxRequests.decrementAndGet();
         var response = endpoint.get();
-        maxRequests++;
+        maxRequests.incrementAndGet();
         return response;
     }
 
@@ -67,7 +69,7 @@ public class Provider {
 
 
     public int getAvailableCapacity() {
-        return maxRequests;
+        return maxRequests.get();
     }
 
     public String getId() {
@@ -75,7 +77,7 @@ public class Provider {
     }
 
     public boolean isAvailable() {
-        return alive && !excluded;
+        return alive && !excluded && maxRequests.get() > 0;
     }
 
 }
