@@ -8,7 +8,7 @@ public class Provider {
     private boolean alive;
     private boolean excluded;
     private int heartBeatCounter;
-    private AtomicInteger maxRequests;
+    private final AtomicInteger maxRequests;
     private final Endpoint endpoint;
 
     public Provider(final String id, final int maxRequests) {
@@ -27,10 +27,10 @@ public class Provider {
 
     public String get() {
         //Simulate network connection
-        if (maxRequests.get() == 0) {
+        var current = maxRequests.decrementAndGet();
+        if (current <= 0) {
             throw new IllegalStateException("Provider %s cannot handle more requests".formatted(id));
         }
-        maxRequests.decrementAndGet();
         var response = endpoint.get();
         maxRequests.incrementAndGet();
         return response;
